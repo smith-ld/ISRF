@@ -75,22 +75,10 @@ class PersonObject:
             self._latino = False
 
     def update_ethnicity(self, ethnicity_list):
-        ethnicities = ethnicity_list.replace('Latino(a)', 'Latinoa')\
-        .replace('White [not Latino(a)]', 'White not Latinoa').split(",")
-        self._ethnicity_list = ethnicities
+        self._ethnicity_list = ethnicity_list
 
     def update_employment(self, employment):
-        if employment == 'I work 20 hours a week or more.':
-            self._working_declaration = 'FT'
-        elif employment == 'I work fewer than 20 hours a week.':
-            self._working_declaration = 'PT'
-        elif employment == 'I\'m working at the moment, but my job will end soon.':
-            self._working_declaration = 'NT'
-        elif employment == 'I am not working, but I\'m looking for a job and want to ' \
-                           'start working as soon as possible.':
-            self._working_declaration = 'UE'
-        else:
-            self._working_declaration = 'UA'
+        self._working_declaration = employment
 
     def update_us_studies(self, studies, us_study_list):
         if studies == 'Yes':
@@ -98,7 +86,7 @@ class PersonObject:
             self._highest_us_grade = us_study_list[0]
             self._highest_ny_grade = us_study_list[1]
             if us_study_list[:-1] != 'None':
-                self._last_ny_schoolname =  us_study_list[:-1]
+                self._last_ny_schoolname = us_study_list[:-1]
 
     def update_oconus_studies(self, finish_hs_oconus, finish_uni_oconus, years):
         if finish_hs_oconus == 'Yes':
@@ -119,9 +107,7 @@ class PersonObject:
             self._single_parent = True
 
     def update_learning_barriers(self, learning_barriers):
-        barriers = learning_barriers.strip().split(",")
-        for barrier in barriers:
-            self._learning_barriers.append(barrier.strip())
+        self._learning_barriers = learning_barriers
 
 
     def get_learning_barriers(self):

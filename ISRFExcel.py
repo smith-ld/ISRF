@@ -15,13 +15,79 @@ class ISRFExcel:
         self._current_worksheet = None
         self._responses = p.SingletonPersons()
 
-
-
     def load_excel_file(self, excel_filename):
         self._workbook = openpyxl.load_workbook(filename=excel_filename)
         self._current_worksheet = self._workbook.worksheets[0]
 
+    def english_employment_scrub(self, employment):
+        if employment == 'I work 20 hours a week or more.':
+            working_declaration = 'FT'
+        elif employment == 'I work fewer than 20 hours a week.':
+            working_declaration = 'PT'
+        elif employment == 'I\'m working at the moment, but my job will end soon.':
+            working_declaration = 'NT'
+        elif employment == 'I am not working, but I\'m looking for a job and want to ' \
+                           'start working as soon as possible.':
+            working_declaration = 'UE'
+        else:
+            working_declaration = 'UA'
 
+        return working_declaration
+
+    def english_ethnicity_scrub(self, ethnicity_list):
+        ethnicity_list = ethnicity_list.replace('Latino(a)', 'Latinoa') \
+            .replace('White [not Latino(a)]', 'White not Latinoa').split(",")
+        temp_list = {'Native Hawaiian': 'NH',
+                     'Native American': 'NA',
+                     'Alaskan Native': 'AN',
+                     'Asian': 'A',
+                     'Pacific Islander': 'PI',
+                     'African American': 'AA',
+                     'Afro-Caribbean': 'AC',
+                     'African': 'A',
+                     'Latinoa': 'L',
+                     'White [not Latinoa]': 'W'
+                     }
+        ethnicities = []
+        for k, v in temp_list.items():
+            if ethnicity_list.__contains__(k):
+                ethnicities.append(temp_list[k])
+        return ethnicities
+
+    def english_learning_barriers_scrub(self, learning_barriers_list):
+        barriers = learning_barriers_list.strip().split(",")
+        print(barriers)
+        barriers = [x.strip() for x in barriers]
+        items = []
+        d = {
+            'Homeless or living in a shelter': 'HOME',
+            'You used to take care of the home or children': 'HM',
+            'Disabled': 'D',
+            'Low Income': 'LI',
+            'You only work during certain seasons.': 'MIG',
+            'You have a learning disability.': 'LD',
+            'You ran away from your home when you were a child or teenager.': 'RA',
+            'English is NOT your first language.': 'ESL',
+            'You spent time in prison.': 'EO',
+            'You used to be in foster care.': 'FC',
+            'The educational system in your country was very different': 'CB',
+            'or you never studied in your country.': 'CB',
+            'You have been unemployed for many years.': 'UE',
+            'but now you must find a job.': 'TANF',
+            'Your TANF (Temporary Assistance for Needy Families) will end within the next two years.': 'TANF',
+            'Single Parent': 'SP'
+        }
+        for barrier in barriers:
+            items.append(d[barrier])
+        return items
+
+    def english_gender_scrub(self, gender):
+        if gender == 'Male':
+            return 'M'
+        elif gender == 'Female':
+            return 'F'
+        else:
+            return 'N'
 
     def organize_form_responses(self):
         for row in self._current_worksheet.iter_rows(min_row=2):
@@ -37,15 +103,16 @@ class ISRFExcel:
             person.update_phone_numbers([mob, home, emer])
             person.update_email(row[11].value)
             person.update_emergency_contact(row[12].value)
-            person.update_gender(row[14].value)
+            person.update_gender(self.english_gender_scrub(row[14].value))
             person.update_latino(row[15].value)
-            person.update_ethnicity(row[16].value)
-            person.update_employment(row[17].value)
+            person.update_ethnicity(self.english_ethnicity_scrub(row[16].value))
+            person.update_employment(self.english_employment_scrub(row[17].value))
             c = [x.value for x in row[19:22]]
             person.update_us_studies(row[18].value, c)
             person.update_oconus_studies(row[22].value, row[23].value, row[24].value)
-            person.update_dependents(row[25].value, row[26].value,row[27].value,row[28].value,row[29].value,row[30].value)
-            person.update_learning_barriers(row[31].value)
+            person.update_dependents(row[25].value, row[26].value, row[27].value, row[28].value, row[29].value,
+                                     row[30].value)
+            person.update_learning_barriers(self.english_learning_barriers_scrub(row[31].value))
             self._responses.add_person(person)
             # for cell in range(len(row)):
             #     #print(row[cell].value, str(cell))
@@ -117,10 +184,10 @@ class ISRFExcel:
             Annots[18].update(pdf.PdfDict(V="  " + "  ".join(phones[2][2]), MaxLen=15))
         if person.get_em_contact() is not None:
                 Annots[19].update(pdf.PdfDict(V=person.get_em_contact()))
-        if person.get_gender() == "Male":
-            Annots[75].update(pdf.PdfDict(AS= pdf.PdfName("Yes")))
-        elif person.get_gender() == 'Female':
-            Annots[76].update(pdf.PdfDict(AS= pdf.PdfName("Yes")))
+        if person.get_gender() == "M":
+            Annots[75].update(pdf.PdfDict(AS=pdf.PdfName("Yes")))
+        elif person.get_gender() == 'F':
+            Annots[76].update(pdf.PdfDict(AS=pdf.PdfName("Yes")))
         else:
             Annots[77].update(pdf.PdfDict(AS= pdf.PdfName("Yes")))
         if person.get_latinoa():
@@ -129,25 +196,25 @@ class ISRFExcel:
             Annots[31].update(pdf.PdfDict(AS = pdf.PdfName("On")))
         ethnicities = person.get_ethnicities()
         print(ethnicities)
-        if ethnicities.__contains__('Native Hawaiian'):
-            Annots[32].update(pdf.PdfDict(AS = pdf.PdfName("On")))
-        if ethnicities.__contains__('Native American'):
+        if ethnicities.__contains__('NH'):
+            Annots[32].update(pdf.PdfDict(AS=pdf.PdfName("On")))
+        if ethnicities.__contains__('NA'):
             Annots[33].update(pdf.PdfDict(AS=pdf.PdfName("On")))
-        if ethnicities.__contains__('Alaskan Native'):
+        if ethnicities.__contains__('AN'):
             Annots[34].update(pdf.PdfDict(AS=pdf.PdfName("On")))
-        if ethnicities.__contains__('Asian'):
+        if ethnicities.__contains__('A'):
             Annots[35].update(pdf.PdfDict(AS=pdf.PdfName("On")))
-        if ethnicities.__contains__('Pacific Islander'):
+        if ethnicities.__contains__('PI'):
             Annots[36].update(pdf.PdfDict(AS=pdf.PdfName("On")))
-        if ethnicities.__contains__('African American'):
+        if ethnicities.__contains__('AA'):
             Annots[37].update(pdf.PdfDict(AS=pdf.PdfName("On")))
-        if ethnicities.__contains__('Afro-Caribbean'):
+        if ethnicities.__contains__('AC'):
             Annots[38].update(pdf.PdfDict(AS=pdf.PdfName("On")))
-        if ethnicities.__contains__('African'):
+        if ethnicities.__contains__('A'):
             Annots[39].update(pdf.PdfDict(AS=pdf.PdfName("On")))
-        if ethnicities.__contains__('Latinoa'):
+        if ethnicities.__contains__('L'):
             Annots[40].update(pdf.PdfDict(AS=pdf.PdfName("On")))
-        if ethnicities.__contains__('White [not Latinoa]'):
+        if ethnicities.__contains__('W'):
             Annots[41].update(pdf.PdfDict(AS=pdf.PdfName("On")))
 
         work_declaration = person.get_working_declaration()
@@ -207,70 +274,70 @@ class ISRFExcel:
 
         learning_barriers = person.get_learning_barriers()
         #print(learning_barriers)
-        if learning_barriers.__contains__('Homeless or living in a shelter'):
-            Annots[78].update(pdf.PdfDict(AS=pdf.PdfName("On"), V = 'On'))
+        if learning_barriers.__contains__('HOME'):
+            Annots[78].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
         else:
             Annots[57].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
-        if learning_barriers.__contains__('You used to take care of the home or children'):
-            Annots[80].update(pdf.PdfDict(AS=pdf.PdfName("On"), V = 'Yes'))
+        if learning_barriers.__contains__('HM'):
+            Annots[80].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='Yes'))
         else:
             Annots[59].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
-        if learning_barriers.__contains__('Disabled'):
-            Annots[81].update(pdf.PdfDict(AS=pdf.PdfName("On"), V = 'On'))
+        if learning_barriers.__contains__('D'):
+            Annots[81].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
         else:
             Annots[60].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
 
-        if learning_barriers.__contains__('Low Income'):
-            Annots[82].update(pdf.PdfDict(AS=pdf.PdfName("On"), V = 'On'))
+        if learning_barriers.__contains__('LI'):
+            Annots[82].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
         else:
             Annots[61].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
-        if learning_barriers.__contains__('You only work during certain seasons.'):
-            Annots[83].update(pdf.PdfDict(AS=pdf.PdfName("On"), V = 'On'))
+        if learning_barriers.__contains__('MIG'):
+            Annots[83].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
         else:
             Annots[62].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
-        if learning_barriers.__contains__('You have a learning disability.'):
-            Annots[90].update(pdf.PdfDict(AS=pdf.PdfName("On"), V = 'On'))
+        if learning_barriers.__contains__('LD'):
+            Annots[90].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
         else:
             Annots[63].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
 
-        if learning_barriers.__contains__('You ran away from your home when you were a child or teenager.'):
-            Annots[91].update(pdf.PdfDict(AS=pdf.PdfName("On"), V = 'On'))
+        if learning_barriers.__contains__('RA'):
+            Annots[91].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
         else:
             Annots[64].update(pdf.PdfDict(AS=pdf.PdfName("On"), V = 'On'))
 
-        if learning_barriers.__contains__('English is NOT your first language.'):
-            Annots[89].update(pdf.PdfDict(AS=pdf.PdfName("On"), V = 'On'))
+        if learning_barriers.__contains__('ESL'):
+            Annots[89].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
         else:
             Annots[88].update(pdf.PdfDict(AS=pdf.PdfName("On"), V = 'On'))
 
-        if learning_barriers.__contains__('You spent time in prison.'):
-            Annots[93].update(pdf.PdfDict(AS=pdf.PdfName("On"), V = 'On'))
+        if learning_barriers.__contains__('EO'):
+            Annots[93].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
         else:
             Annots[66].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
 
-        if learning_barriers.__contains__('You used to be in foster care.'):
-            Annots[94].update(pdf.PdfDict(AS=pdf.PdfName("On"), V = 'On'))
+        if learning_barriers.__contains__('FC'):
+            Annots[94].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
         else:
             Annots[67].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
 
-
-        if learning_barriers.__contains__('The educational system in your country was very different'):
-            Annots[84].update(pdf.PdfDict(AS=pdf.PdfName("On"), V = 'On'))
+        if learning_barriers.__contains__('CB'):
+            Annots[84].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
         else:
             Annots[68].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
 
-        if learning_barriers.__contains__('You have been unemployed for many years.'):
-            Annots[85].update(pdf.PdfDict(AS=pdf.PdfName("On"), V = 'On'))
+        if learning_barriers.__contains__('UE'):
+            Annots[85].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
         else:
             Annots[69].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
 
-        if learning_barriers.__contains__('Your TANF (Temporary Assistance for Needy Families) will end within the next two years.'):
-            Annots[86].update(pdf.PdfDict(AS=pdf.PdfName("On"), V = 'On'))
+        if learning_barriers.__contains__('TANF'):
+            Annots[86].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
         else:
             Annots[70].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
 
-        if learning_barriers.__contains__('Single Parent'):
-            Annots[87].update(pdf.PdfDict(AS=pdf.PdfName("On"), V = 'On'))
+        if learning_barriers.__contains__('SP') and person.single_parent():
+            print('is a single parent' + str(person.get_fullname()))
+            Annots[87].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
         else:
             Annots[71].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
 
@@ -279,5 +346,5 @@ class ISRFExcel:
 
         # Annots[72].update(pdf.PdfDict(V='Electronically Completed by CI worker: ' + 'LS'))
         name = person.get_fullname()
-        hel = name[0] + name[1]+ '.pdf'
+        hel = name[0] + name[1] + '.pdf'
         pdf.PdfWriter().write(hel, persons_pdf)
