@@ -1,9 +1,13 @@
 import datetime
 
+# multiple language support
+YESANSWERS = ['Yes', 'Sí']
+
 
 class PersonObject:
 
     def __init__(self):
+
         self._name = []
         self._birthdate = None
         self._todaysdate = None
@@ -69,7 +73,7 @@ class PersonObject:
         self._gender = gender
 
     def update_latino(self, declaration):
-        if declaration == 'Yes':
+        if declaration in YESANSWERS:
             self._latino = True
         else:
             self._latino = False
@@ -81,34 +85,33 @@ class PersonObject:
         self._working_declaration = employment
 
     def update_us_studies(self, studies, us_study_list):
-        if studies == 'Yes':
+        if studies in YESANSWERS:
             self._studied_in_US = True
             self._highest_us_grade = us_study_list[0]
             self._highest_ny_grade = us_study_list[1]
-            if us_study_list[:-1] != 'None':
-                self._last_ny_schoolname = us_study_list[:-1]
+            if us_study_list[-1] != 'None':
+                self._last_ny_schoolname = us_study_list[-1]
 
     def update_oconus_studies(self, finish_hs_oconus, finish_uni_oconus, years):
-        if finish_hs_oconus == 'Yes':
+        if finish_hs_oconus in YESANSWERS:
             self._finished_hs = True
         else:
             self.update_oconus_study_years(years)
-        if finish_uni_oconus == 'Yes':
+        if finish_uni_oconus in YESANSWERS:
             self._finished_uni = True
 
     def update_oconus_study_years(self, years_studied):
         self._country_years = years_studied
 
     def update_dependents(self, has_deps, single_par, zero_to_four ,five_to_ten, ele_to_thir, four_to_eigh):
-        if has_deps == 'Yes':
+        if has_deps in YESANSWERS:
             self._has_dependents = True
             self._dependents = [zero_to_four, five_to_ten, ele_to_thir, four_to_eigh]
-        if single_par == 'Yes':
+        if single_par in YESANSWERS:
             self._single_parent = True
 
     def update_learning_barriers(self, learning_barriers):
         self._learning_barriers = learning_barriers
-
 
     def get_learning_barriers(self):
         return self._learning_barriers
@@ -137,7 +140,6 @@ class PersonObject:
     def get_highest_us_grade(self):
         return self._highest_us_grade
 
-
     def get_highest_ny_grade(self):
         return self._highest_ny_grade
 
@@ -160,7 +162,7 @@ class PersonObject:
         return self._single_parent
 
     def get_dependents(self):
-        print(self._dependents)
+        # print(self._dependents)
         return self._dependents
 
 """    self._studied_in_US = False
@@ -174,6 +176,7 @@ class PersonObject:
         self._single_parent = False
         self._has_dependents = False
         self._learning_barriers = []"""
+
 
 class SingletonPersons:
     def __init__(self):
