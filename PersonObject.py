@@ -1,7 +1,7 @@
 import datetime
 
 # multiple language support
-YESANSWERS = ['Yes', 'Sí']
+YESANSWERS = ['Yes', 'Sí', 'Oui']
 
 
 class PersonObject:
@@ -30,6 +30,7 @@ class PersonObject:
         self._single_parent = False
         self._has_dependents = False
         self._learning_barriers = []
+        self._start_date = None
 
     def get_birthdate(self):
         return self._birthdate
@@ -164,6 +165,30 @@ class PersonObject:
     def get_dependents(self):
         # print(self._dependents)
         return self._dependents
+
+    def set_program_startdate(self, start_date):
+        # in '6/10/2020 4:21:23' format
+        # start_date = start_date.replace("2020", "20")
+        self._start_date = start_date
+
+    def get_program_startdate(self):
+        if self._start_date is None:
+            today = datetime.date.today()
+        else:
+            today = self._start_date
+        month = today.month
+        if month < 10:
+            month = "0" + str(month)
+
+        day = today.day
+        if day < 10:
+            day = "0" + str(day)
+
+        year = str(today.year)
+
+        current_day = "{m}{d}{y}".format(m=month, d=day, y=year)
+        return current_day
+
 
 """    self._studied_in_US = False
         self._highest_us_grade = None

@@ -1,0 +1,16 @@
+HOME Homeless or living in a shelter
+HM You used to take care of the home or children
+D Disabled
+LI Low Income
+MIG You only work during certain seasons.
+LD You have a learning disability.
+RA You ran away from your home when you were a child or teenager.
+ESL English is NOT your first language.
+EO You spent time in prison.
+FC You used to be in foster care.
+CB The educational system in your country was very different
+CB or you never studied in your country.
+UE You have been unemployed for many years.
+HM but now you must find a job.
+TANF Your TANF (Temporary Assistance for Needy Families) will end within the next two years.
+SP Single Parent

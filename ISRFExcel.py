@@ -20,6 +20,7 @@ datetimelocations = {3, 4}  # indexing for excel. For ISRF form is -1 these loca
 GENDERMALE = ['MALE', 'MASCULINO', 'MÂLE']
 GENDERFEMALE = ['FEMALE', 'FEMENINO', 'FEMELLE']
 CITIES = {'nueva york': 'New York'}
+NUM_WRITTEN = 0
 
 
 class ISRFExcel:
@@ -68,6 +69,30 @@ class ISRFExcel:
 
         return working_declaration
 
+    def french_employment_scrub(self, employment):
+        if employment == 'Je travaille 20 heures par semaine ou plus.':
+            working_declaration = 'FT'
+        elif employment == 'Je travaille moins de 20 heures par semaine.':
+            working_declaration = 'PT'
+        elif employment == 'Estoy trabajando por ahora, pero mi empleo terminará pronto (quedaré desempleado).':
+            working_declaration = 'NT'
+        elif employment == 'Je ne travaille pas, mais je suis à la recherche d\'' \
+                           'un emploi et je veux commencer à travailler dès que possible.':
+            working_declaration = 'UE'
+        elif employment == 'Je ne travaille pas. Je ne veux pas trouver de travail en ce moment. ' \
+                           'Il se peut que je cherche un emploi l\'année prochaine.':
+            working_declaration = 'UA'
+        else:
+            print("Possible employment values are: {}, and they said {}. Please pick which one the student meant.".
+                  format(employment,
+                         str(["FT", 'PT', 'NT', 'UE', 'UA'])))
+
+            working_declaration = input("Which one did they mean? ")
+            with open('Adjustments.txt', 'a') as f:
+                f.writelines("French Employment needs adjustment: {} and code {}\n".format(employment,
+                                                                                           working_declaration))
+        return working_declaration
+
     def spanish_ethnicity_scrub(self, ethnicity_list):
         # TODO - FIX SPANISH ETHNICITIES
         ethnicity_list = ethnicity_list.replace('Latino(a)', 'Latinoa').split(",")
@@ -77,8 +102,8 @@ class ISRFExcel:
                      'Alaskan Native': 'AN',
                      'Asiático(a)': 'AF',
                      'Pacific Islander': 'PI',
-                     'African American': 'AA',
-                     'Afro-Caribbean': 'AC',
+                     'Afro-Caribeño(a)': 'AC',
+                     'Afroamericano(a)': 'AA',
                      'African': 'AS',
                      'Latinoa': 'L', 'Latino(a)': 'L',
                      'Blanco [No latino(a)]': 'W'
@@ -99,10 +124,83 @@ class ISRFExcel:
 
                 with open('Adjustments.txt', 'a') as f:
                     adjustments = "Adjustment for SPANISH: "
-                    st = "{}:'{}'".format(eth, code)
+                    st = "{}:'{}'\n".format(eth, code)
                     f.writelines(adjustments)
                     f.writelines(st)
         return ethnicities
+
+    def french_ethnicity_scrub(self, ethnicity_list):
+        # TODO - FIX FRENCH ETHNICITIES
+        ethnicity_list = ethnicity_list.strip().split(",")
+        ethnicity_list = list(map(lambda x: x.strip(), ethnicity_list))
+        temp_list = {'Native Hawaiian': 'NH',
+                     'Nativo(a) Americano(a)': 'NA',
+                     'Alaskan Native': 'AN',
+                     'Africain': 'AF',
+                     'Pacific Islander': 'PI',
+                     'Afro-caribéen': 'AC',
+                     'Afro-Américain': 'AA',
+                     'Asian': 'AS',
+                     'Latinoa': 'L', 'Latino(a)': 'L',
+                     'Blanc [pas Latino(a)]': 'W'
+                     }
+
+        ethnicities = []
+
+        for eth in ethnicity_list:
+            if eth in temp_list.keys():
+                ethnicities.append(temp_list[eth])
+            else:
+                print("\nPossible code values: " + str(temp_list.values()))
+                code = input("Not recognized French ethnicity: {} please enter the code manually: ".format(eth))
+                ethnicities.append(code)
+
+                with open('Adjustments.txt', 'a') as f:
+                    adjustments = "Adjustment for FRENCH Ethnicity: "
+                    st = "{}:'{}'\n".format(eth, code)
+                    f.writelines(adjustments)
+                    f.writelines(st)
+        return ethnicities
+
+    def french_learning_barriers_scrub(self, learning_barriers_list):
+        barriers = learning_barriers_list.strip().split(",")
+        # print(barriers)
+        barriers = [x.strip() for x in barriers]
+        items = []
+        d = {
+            'Sans abri ou vivant dans un refuge': 'HOME',
+            'Solía hacerse cargo del hogar o de sus hijos, pero ahora debe encontrar un trabajo.': 'HM',  # TODO
+            'Posee alguna discapacidad.': 'D',  # TODO
+            'Personne à faibles revenus': 'LI',
+            'Sólo trabaja durante algunas temporadas.': 'MIG',  # TODO
+            'Posee alguna discapacidad de aprendizaje.': 'LD',  # TODO
+            'Dejó su hogar cuando era niño(a) o adolescente.': 'RA',  # TODO
+            'L\'anglais n\'est PAS votre langue maternelle.': 'ESL',
+            'Vous avez passé du temps en prison.': 'EO',  # TODO
+            'You used to be in foster care.': 'FC',  # TODO
+            'Le système éducatif de votre pays était très différent': 'CB',
+            'ou vous n\'avez jamais étudié dans votre pays.': 'CB',
+            'Vous êtes au chômage depuis de nombreuses années.': 'UE',  # TODO
+            'but now you must find a job.': 'TANF',  # TODO
+            'Your TANF (Temporary Assistance for Needy Families) will end within the next two years.': 'TANF',  # TODO
+            'Parent célibataire.': 'SP',
+            'Solía hacerse cargo del hogar o de sus hijos': 'HM', 'pero ahora debe encontrar un trabajo.': 'HM',  # TODO
+
+        }
+        for barrier in barriers:
+            if barrier in d.keys():
+                items.append(d[barrier])
+            else:
+                print("Possible code values: " + str(d.values()))
+                code = input(
+                    "Not recognized French learning barrier: {} please enter the code manually: ".format(barrier))
+                items.append(code)
+                with open('Adjustments.txt', 'a') as f:
+                    adjustments = "Adjustment for French Learning Barriers: "
+                    st = "{}:'{}'\n".format(barrier, code)
+                    f.writelines(adjustments)
+                    f.writelines(st)
+        return items
 
     def spanish_learning_barriers_scrub(self, learning_barriers_list):
         barriers = learning_barriers_list.strip().split(",")
@@ -191,7 +289,7 @@ class ISRFExcel:
             items.append(d[barrier])
         return items
 
-    def english_gender_scrub(self, gender):
+    def gender_scrub(self, gender):
         if gender in GENDERMALE:
             return 'MALE'
         elif gender in GENDERFEMALE:
@@ -199,13 +297,15 @@ class ISRFExcel:
         else:
             return 'NONBINARY'
 
-    def organize_form_responses(self, start_row):
-        for row in self._current_worksheet.iter_rows(min_row=2, max_row=83):
+    def organize_form_responses(self, start_row, max_row, response_type):
+        for row in self._current_worksheet.iter_rows(min_row=start_row, max_row=max_row):
 
             person = p.PersonObject()
+            start_date = row[0].value
+            person.set_program_startdate(start_date)
             person.update_name(row[1].value, row[2].value)
             person.update_dates(row[3].value, row[4].value)
-            print(person.get_fullname())
+
             c = [x.value.title() for x in row[5:7]]
             try:
                 c.append(str(int(row[8].value)))
@@ -222,18 +322,30 @@ class ISRFExcel:
             person.update_email(row[11].value)
             person.update_emergency_contact(row[12].value)
 
-            person.update_gender(self.english_gender_scrub(row[14].value.upper()))  # TODO EG
+            person.update_gender(self.gender_scrub(row[14].value.upper()))  # TODO EG
             person.update_latino(row[15].value)
-            person.update_ethnicity(self.spanish_ethnicity_scrub(row[16].value))  # TODO ELB
-            person.update_employment(self.spanish_employment_scrub(row[17].value))
+
+            if response_type == "ENGLISH":
+                person.update_learning_barriers(self.english_learning_barriers_scrub(row[31].value))
+                person.update_ethnicity(self.english_ethnicity_scrub(row[16].value))
+                person.update_employment(self.english_employment_scrub(row[17].value))
+            elif response_type == "SPANISH":
+                person.update_learning_barriers(self.spanish_learning_barriers_scrub(row[31].value))
+                person.update_ethnicity(self.spanish_ethnicity_scrub(row[16].value))  # TODO ELB
+                person.update_employment(self.spanish_employment_scrub(row[17].value))
+            elif response_type == "FRENCH":
+                person.update_learning_barriers(self.french_learning_barriers_scrub(row[31].value))
+                person.update_ethnicity(self.french_ethnicity_scrub(row[16].value))
+                person.update_employment(self.french_employment_scrub(row[17].value))
+
             c = [x.value for x in row[19:22]]
             # print(c)
             person.update_us_studies(row[18].value, c)
             person.update_oconus_studies(row[22].value, row[23].value, row[24].value)
             person.update_dependents(row[25].value, row[26].value, row[27].value, row[28].value, row[29].value,
                                      row[30].value)
-            print(row[31].value)
-            person.update_learning_barriers(self.spanish_learning_barriers_scrub(row[31].value))  # TODO ELB
+            # print(row[31].value)
+            # TODO ELB
             self._responses.add_person(person)
             # for cell in range(len(row)):
             #     #print(row[cell].value, str(cell))
@@ -285,7 +397,7 @@ class ISRFExcel:
             info += date[indeces[i]]
             if i < length:
                 info += "  "
-        print(date)
+        # print(date)
         # info = '  {}  {}  {}  {}  {}  {}   {}  {}'.format(date[5], date[6], date[8], date[9], date[0], date[1], date[2],
         #                                                   date[3])
         Annots[3].update(pdf.PdfDict(V=info, MaxLen=40))  # bday
@@ -293,6 +405,7 @@ class ISRFExcel:
         Annots[2].update(pdf.PdfDict(V=person.get_fullname()[1]))  # lname
         address = person.get_address()
         # print(address)
+        Annots[4].update(pdf.PdfDict(V="  " + "  ".join(person.get_program_startdate()), MaxLen=40))
         Annots[5].update(pdf.PdfDict(V=address[0]))  # add
         Annots[6].update(pdf.PdfDict(V=self.clean_city(address[1])))  # city
         Annots[7].update(pdf.PdfDict(V=' N  Y', MaxLen=8))  # state
@@ -497,6 +610,8 @@ class ISRFExcel:
             persons_pdf.Root.AcroForm.update(pdf.PdfDict(NeedAppearances=pdf.PdfObject('true')))
         except AttributeError:
             print(str(name) + "  did not have the Root attribute")
-        print(location)
+        global NUM_WRITTEN
+        print(str(NUM_WRITTEN) + " " + location)
+        NUM_WRITTEN += 1
         pdf.PdfWriter().write(location, persons_pdf)
         os.chdir(old_path)
