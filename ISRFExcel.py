@@ -3,17 +3,11 @@ import datetime
 import PersonObject as p
 import pdfrw as pdf
 import os
+import sys
 
 ANNOTATIONKEYS = {
-    "M": 75,
-    "F": 76,
-    'NONBINARY': 77,
-    "LATIONA": 30,
-    "NONLATINOA": 31,
-    'NH': 32, 'NA': 33, 'AN': 34, 'AS': 35, 'PI': 36, 'AA': 37, 'AC': 38, 'AF': 39,
-    'L': 40, 'W': 41, 'FT': 23, 'PT': 24, 'NT': 25, 'UE': 27, 'UA': 28, 'STUDIEDINUS': 46,
-    'NONUSSTUDY': 47, 'COUNTRYHSE': 50, 'COUNTRYUNI': 51, 'NODEP': 96, 'NOTSP': 98,
-    'HASDEP': 95, 'SINGLEPARENT': 97, 'HOME': 78, 'HM': 80, 'D': 81
+    'FT': 23, 'PT': 24, 'NT': 25, 'UE': 27, 'UA': 28, 'NH': 32, 'NA': 33, 'AN': 34,
+    'AS': 35, 'PI': 36, 'AA': 37, 'AC': 38, 'AF': 39, 'L': 40, 'W': 41
 }
 datetimelocations = {3, 4}  # indexing for excel. For ISRF form is -1 these locations.
 
@@ -25,10 +19,46 @@ NUM_WRITTEN = 0
 
 class ISRFExcel:
 
-    def __init__(self):
+    def __init__(self, translation_file):
         self._workbook = None
         self._current_worksheet = None
         self._responses = p.SingletonPersons()
+        self._translations = self.parse_translation_file(translation_file)
+
+    def parse_translation_file(self, t_file):
+        with open(t_file, 'r') as file:
+            lines = file.readlines()
+            languages = lines[0].split()
+            languages = [x.strip() for x in languages]
+            # print(languages)
+            i = 1
+            lang_dict = {}
+            current_lang_dict = {}
+            current_lang = ""
+            while i < len(lines):
+                line = lines[i].strip()
+
+                if line in languages:
+                    current_lang = line
+
+                    # print(current_lang)
+
+                elif line == "":
+                    # print("HERE")
+                    # print(current_lang_dict)
+                    # print(current_lang)
+                    if current_lang != "":
+                        lang_dict[current_lang] = current_lang_dict
+                else:
+
+                    # print(str(i)  + " " + line)
+
+                    current_lang_dict[line] = lines[i + 1].strip()
+                    i += 2
+                    continue
+                i += 1
+            lang_dict[current_lang] = current_lang_dict
+            return lang_dict
 
     def load_excel_file(self, excel_filename):
         self._workbook = openpyxl.load_workbook(filename=excel_filename)
@@ -170,19 +200,20 @@ class ISRFExcel:
         d = {
             'Sans abri ou vivant dans un refuge': 'HOME',
             'Solía hacerse cargo del hogar o de sus hijos, pero ahora debe encontrar un trabajo.': 'HM',  # TODO
-            'Posee alguna discapacidad.': 'D',  # TODO
+            'désactivé': 'D',
             'Personne à faibles revenus': 'LI',
-            'Sólo trabaja durante algunas temporadas.': 'MIG',  # TODO
-            'Posee alguna discapacidad de aprendizaje.': 'LD',  # TODO
-            'Dejó su hogar cuando era niño(a) o adolescente.': 'RA',  # TODO
+            'Cela ne fonctionne que pendant quelques saisons.': 'MIG',
+            'Vous avez un trouble d\'apprentissage.': 'LD',
+            'Vous vous êtes enfui de chez vous lorsque vous étiez enfant ou adolescent.': 'RA',
             'L\'anglais n\'est PAS votre langue maternelle.': 'ESL',
-            'Vous avez passé du temps en prison.': 'EO',  # TODO
-            'You used to be in foster care.': 'FC',  # TODO
+            'Vous avez passé du temps en prison.': 'EO',
+            'Vous étiez en famille d\'accueil.': 'FC',
             'Le système éducatif de votre pays était très différent': 'CB',
             'ou vous n\'avez jamais étudié dans votre pays.': 'CB',
-            'Vous êtes au chômage depuis de nombreuses années.': 'UE',  # TODO
+            'Vous êtes au chômage depuis de nombreuses années.': 'UE',
             'but now you must find a job.': 'TANF',  # TODO
-            'Your TANF (Temporary Assistance for Needy Families) will end within the next two years.': 'TANF',  # TODO
+            'Votre TANF (Assistance temporaire pour les familles nécessiteuses) prendra fin dans les deux '
+            'prochaines années.': 'TANF',
             'Parent célibataire.': 'SP',
             'Solía hacerse cargo del hogar o de sus hijos': 'HM', 'pero ahora debe encontrar un trabajo.': 'HM',  # TODO
 
@@ -208,7 +239,7 @@ class ISRFExcel:
         barriers = [x.strip() for x in barriers]
         items = []
         d = {
-            'Sin hogar o viviendo en un refugio.': 'HOME',  # TODO
+            'Sin hogar o viviendo en un refugio.': 'HOME',
             'Solía hacerse cargo del hogar o de sus hijos, pero ahora debe encontrar un trabajo.': 'HM',
             'Posee alguna discapacidad.': 'D',
             'Bajos ingresos.': 'LI',
@@ -216,13 +247,13 @@ class ISRFExcel:
             'Posee alguna discapacidad de aprendizaje.': 'LD',
             'Dejó su hogar cuando era niño(a) o adolescente.': 'RA',
             'El inglés no es su idioma nativo.': 'ESL',
-            'You spent time in prison.': 'EO',  # TODO
-            'You used to be in foster care.': 'FC',  # TODO
+            'Pasaste tiempo en prisión.': 'EO',
+            'Solías estar en un hogar de acogida.': 'FC',
             'El sistema educacional en su país es muy diferente o nunca estudió en su país.': 'CB',
             'or you never studied in your country.': 'CB',
-            'Ha estado desempleado(a) por varios años.': 'UE',  # TODO
+            'Ha estado desempleado(a) por varios años.': 'UE',
             'but now you must find a job.': 'TANF',  # TODO
-            'Your TANF (Temporary Assistance for Needy Families) will end within the next two years.': 'TANF',  # TODO
+            'Su TANF (Asistencia Temporal para Familias Necesitadas terminará dentro de los próximos dos años.': 'TANF',
             'Es padre soltero o madre soltera.': 'SP',
             'Solía hacerse cargo del hogar o de sus hijos': 'HM', 'pero ahora debe encontrar un trabajo.': 'HM',
 
@@ -297,6 +328,15 @@ class ISRFExcel:
         else:
             return 'NONBINARY'
 
+    # def employment_scrub(self, language, personal_item):
+    #
+    #     item = "{}_EMPLOYMENT".format(language.upper())
+    #     if item not in self._translations:
+    #         print("{} was not found in the translation file, exiting program.")
+    #         sys.exit(0)
+    #     language_specific_dict = self._translations[item]
+    #     return language_specific_dict[personal_item]
+
     def organize_form_responses(self, start_row, max_row, response_type):
         for row in self._current_worksheet.iter_rows(min_row=start_row, max_row=max_row):
 
@@ -325,6 +365,7 @@ class ISRFExcel:
             person.update_gender(self.gender_scrub(row[14].value.upper()))  # TODO EG
             person.update_latino(row[15].value)
 
+            response_type = response_type.upper()
             if response_type == "ENGLISH":
                 person.update_learning_barriers(self.english_learning_barriers_scrub(row[31].value))
                 person.update_ethnicity(self.english_ethnicity_scrub(row[16].value))
@@ -434,45 +475,67 @@ class ISRFExcel:
             Annots[76].update(pdf.PdfDict(AS=pdf.PdfName("Yes")))
         else:
             Annots[77].update(pdf.PdfDict(AS=pdf.PdfName("Yes")))
+
+        tto = []
+
         if person.get_latinoa():
-            Annots[30].update(pdf.PdfDict(AS=pdf.PdfName("On")))
+            tto.append(30)
+            # Annots[30].update(pdf.PdfDict(AS=pdf.PdfName("On")))
         else:
-            Annots[31].update(pdf.PdfDict(AS=pdf.PdfName("On")))
+            tto.append(31)
+            # Annots[31].update(pdf.PdfDict(AS=pdf.PdfName("On")))
         ethnicities = person.get_ethnicities()
         # print(ethnicities)
-
-        if ethnicities.__contains__('NH'):
-            Annots[32].update(pdf.PdfDict(AS=pdf.PdfName("On")))
-        if ethnicities.__contains__('NA'):
-            Annots[33].update(pdf.PdfDict(AS=pdf.PdfName("On")))
-        if ethnicities.__contains__('AN'):
-            Annots[34].update(pdf.PdfDict(AS=pdf.PdfName("On")))
-        if ethnicities.__contains__('AS'):
-            Annots[35].update(pdf.PdfDict(AS=pdf.PdfName("On")))
-        if ethnicities.__contains__('PI'):
-            Annots[36].update(pdf.PdfDict(AS=pdf.PdfName("On")))
-        if ethnicities.__contains__('AA'):
-            Annots[37].update(pdf.PdfDict(AS=pdf.PdfName("On")))
-        if ethnicities.__contains__('AC'):
-            Annots[38].update(pdf.PdfDict(AS=pdf.PdfName("On")))
-        if ethnicities.__contains__('AF'):
-            Annots[39].update(pdf.PdfDict(AS=pdf.PdfName("On")))
-        if ethnicities.__contains__('L'):
-            Annots[40].update(pdf.PdfDict(AS=pdf.PdfName("On")))
-        if ethnicities.__contains__('W'):
-            Annots[41].update(pdf.PdfDict(AS=pdf.PdfName("On")))
+        for x in ethnicities:
+            Annots[ANNOTATIONKEYS[x]].update(pdf.PdfDict(AS=pdf.PdfName("On")))
+        # if ethnicities.__contains__('NH'):
+        #     tto.append(32)
+        #     #Annots[32].update(pdf.PdfDict(AS=pdf.PdfName("On")))
+        # if ethnicities.__contains__('NA'):
+        #     tto.append(33)
+        #     #Annots[33].update(pdf.PdfDict(AS=pdf.PdfName("On")))
+        # if ethnicities.__contains__('AN'):
+        #     tto.append(34)
+        #     #Annots[34].update(pdf.PdfDict(AS=pdf.PdfName("On")))
+        # if ethnicities.__contains__('AS'):
+        #     tto.append(35)
+        #     #Annots[35].update(pdf.PdfDict(AS=pdf.PdfName("On")))
+        # if ethnicities.__contains__('PI'):
+        #     tto.append(36)
+        #     #Annots[36].update(pdf.PdfDict(AS=pdf.PdfName("On")))
+        # if ethnicities.__contains__('AA'):
+        #     tto.append(37)
+        #     #Annots[37].update(pdf.PdfDict(AS=pdf.PdfName("On")))
+        # if ethnicities.__contains__('AC'):
+        #     tto.append(38)
+        #     #Annots[38].update(pdf.PdfDict(AS=pdf.PdfName("On")))
+        # if ethnicities.__contains__('AF'):
+        #     tto.append(39)
+        #     #Annots[39].update(pdf.PdfDict(AS=pdf.PdfName("On")))
+        # if ethnicities.__contains__('L'):
+        #     tto.append(40)
+        #     #Annots[40].update(pdf.PdfDict(AS=pdf.PdfName("On")))
+        # if ethnicities.__contains__('W'):
+        #     tto.append(41)
+        #     #Annots[41].update(pdf.PdfDict(AS=pdf.PdfName("On")))
 
         work_declaration = person.get_working_declaration()
+        # Annots[d[work_declaration].update(pdf.PdfDict(AS=pdf.PdfName("On"))) should work
         if work_declaration == 'FT':
-            Annots[23].update(pdf.PdfDict(AS=pdf.PdfName("On")))
+            tto.append(23)
+            # Annots[23].update(pdf.PdfDict(AS=pdf.PdfName("On")))
         elif work_declaration == 'PT':
-            Annots[24].update(pdf.PdfDict(AS=pdf.PdfName("On")))
+            tto.append(24)
+            # Annots[24].update(pdf.PdfDict(AS=pdf.PdfName("On")))
         elif work_declaration == 'NT':
-            Annots[25].update(pdf.PdfDict(AS=pdf.PdfName("On"), ))
+            tto.append(25)
+            # Annots[25].update(pdf.PdfDict(AS=pdf.PdfName("On"), ))
         elif work_declaration == 'UE':
-            Annots[27].update(pdf.PdfDict(AS=pdf.PdfName("On")))
+            tto.append(27)
+            # Annots[27].update(pdf.PdfDict(AS=pdf.PdfName("On")))
         elif work_declaration == 'UA':
-            Annots[28].update(pdf.PdfDict(AS=pdf.PdfName("On")))
+            tto.append(28)
+            # Annots[28].update(pdf.PdfDict(AS=pdf.PdfName("On")))
 
         if person.get_studied_in_us():
             CONUS = True
@@ -496,13 +559,17 @@ class ISRFExcel:
         country_uni = person.get_finished_uni()
         if country_hse or country_uni:
             if CONUS:
-                Annots[46].update(pdf.PdfDict(AS=pdf.PdfName("On")))
+                tto.append(46)
+                #Annots[46].update(pdf.PdfDict(AS=pdf.PdfName("On")))
             else:
-                Annots[47].update(pdf.PdfDict(AS=pdf.PdfName("On")))
+                tto.append(47)
+                #Annots[47].update(pdf.PdfDict(AS=pdf.PdfName("On")))
             if country_uni:
-                Annots[51].update(pdf.PdfDict(AS=pdf.PdfName("On")))
+                tto.append(51)
+                #Annots[51].update(pdf.PdfDict(AS=pdf.PdfName("On")))
             elif country_hse:
-                Annots[50].update(pdf.PdfDict(AS=pdf.PdfName("On")))
+                tto.append(50)
+                #Annots[50].update(pdf.PdfDict(AS=pdf.PdfName("On")))
 
         country_years = person.get_country_years()
         if country_years is not None:
@@ -511,14 +578,19 @@ class ISRFExcel:
         hasDependents = person.get_dependent_status()
 
         if not hasDependents:
-            Annots[96].update(pdf.PdfDict(AS=pdf.PdfName("On")))
-            Annots[98].update(pdf.PdfDict(AS=pdf.PdfName("On")))
+            tto.append(96)
+            tto.append(98)
+            # Annots[96].update(pdf.PdfDict(AS=pdf.PdfName("On")))
+            #Annots[98].update(pdf.PdfDict(AS=pdf.PdfName("On")))
         else:
-            Annots[95].update(pdf.PdfDict(AS=pdf.PdfName("On")))
+            tto.append(95)
+            # Annots[95].update(pdf.PdfDict(AS=pdf.PdfName("On")))
             if person.single_parent():
-                Annots[97].update(pdf.PdfDict(AS=pdf.PdfName("On")))
+                tto.append(97)
+                # Annots[97].update(pdf.PdfDict(AS=pdf.PdfName("On")))
             else:
-                Annots[98].update(pdf.PdfDict(AS=pdf.PdfName("On")))
+                tto.append(98)
+                # Annots[98].update(pdf.PdfDict(AS=pdf.PdfName("On")))
         dependents = person.get_dependents()
         for i in range(len(dependents)):
             if dependents[i] is not None:
@@ -526,75 +598,112 @@ class ISRFExcel:
 
         learning_barriers = person.get_learning_barriers()
         # print(learning_barriers)
+        tto_y = []
+        """ for x in learning_barriers: 
+                if d.keys.contains(x):
+                    Annots[d[x]].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
+                else: 
+                    Annots[d[str('n'+ x]).update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On')) 
+        """
+        # TODO add 'n'+x to main dictionary
         if learning_barriers.__contains__('HOME'):
-            Annots[78].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
+            tto_y.append(78)
+            # Annots[78].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
         else:
-            Annots[57].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
+            tto_y.append(57)
+            # nnots[57].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
         if learning_barriers.__contains__('HM'):
-            Annots[80].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='Yes'))
+            tto_y.append(80)
+            # Annots[80].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='Yes'))
         else:
-            Annots[59].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
+            tto_y.append(59)
+            #Annots[59].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
         if learning_barriers.__contains__('D'):
-            Annots[81].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
+            tto_y.append(81)
+            #Annots[81].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
         else:
-            Annots[60].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
+            tto_y.append(60)
+            #Annots[60].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
 
         if learning_barriers.__contains__('LI'):
-            Annots[82].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
+            tto_y.append(82)
+            #Annots[82].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
         else:
-            Annots[61].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
+            tto_y.append(61)
+            #Annots[61].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
         if learning_barriers.__contains__('MIG'):
-            Annots[83].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
+            tto_y.append(83)
+            #Annots[83].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
         else:
-            Annots[62].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
+            tto_y.append(62)
+            #Annots[62].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
         if learning_barriers.__contains__('LD'):
-            Annots[90].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
+            tto_y.append(90)
+            #Annots[90].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
         else:
-            Annots[63].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
+            tto_y.append(63)
+            #Annots[63].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
 
         if learning_barriers.__contains__('RA'):
-            Annots[91].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
+            tto_y.append(91)
+            #Annots[91].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
         else:
-            Annots[64].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
+            tto_y.append(64)
+            #Annots[64].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
 
         if learning_barriers.__contains__('ESL'):
-            Annots[89].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
+            tto_y.append(89)
+            #Annots[89].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
         else:
-            Annots[88].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
+            tto_y.append(88)
+            #Annots[88].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
 
         if learning_barriers.__contains__('EO'):
-            Annots[93].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
+            tto_y.append(93)
+            #Annots[93].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
         else:
-            Annots[66].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
+            tto_y.append(66)
+            #Annots[66].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
 
         if learning_barriers.__contains__('FC'):
-            Annots[94].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
+            tto_y.append(94)
+            #Annots[94].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
         else:
-            Annots[67].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
+            tto_y.append(67)
+            #Annots[67].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
 
         if learning_barriers.__contains__('CB'):
-            Annots[84].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
+            tto_y.append(84)
+            #Annots[84].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
         else:
-            Annots[68].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
+            tto_y.append(68)
+            #Annots[68].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
 
         if learning_barriers.__contains__('UE'):
-            Annots[85].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
+            tto_y.append(85)
+            #Annots[85].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
         else:
-            Annots[69].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
+            tto_y.append(69)
+            #Annots[69].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
 
         if learning_barriers.__contains__('TANF'):
-            Annots[86].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
+            tto_y.append(86)
+            #Annots[86].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
         else:
-            Annots[70].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
+            tto_y.append(70)
+            # Annots[70].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
 
         if learning_barriers.__contains__('SP') and person.single_parent():
             # print('is a single parent' + str(person.get_fullname()))
-            Annots[87].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
+            tto_y.append(87)
+            # Annots[87].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
         else:
-            Annots[71].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
+            tto_y.append(71)
+            # Annots[71].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
 
-        Annots[58].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
-        Annots[65].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
+        tto_y.extend([58, 65])
+        # Annots[58].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
+        # Annots[65].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
 
         # Annots[72].update(pdf.PdfDict(V='Electronically Completed by CI worker: ' + 'LS'))
         name = person.get_fullname()
@@ -604,6 +713,10 @@ class ISRFExcel:
 
         # print(os.getcwd())
         location = name[0] + " " + name[1] + ' ISRF.pdf'
+        for i in tto:
+            Annots[i].update(pdf.PdfDict(AS=pdf.PdfName("On")))
+        for i in tto_y:
+            Annots[i].update(pdf.PdfDict(AS=pdf.PdfName("On"), V='On'))
 
         try:
             # person.Root.AcroForm.update(pdf.PdfDict(NeedAppearances=pdf.PdfObject('true')))

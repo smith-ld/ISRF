@@ -1,0 +1,39 @@
+FRENCH_EMPLOYMENT SPANISH_EMPLOYMENT ENGLISH_EMPLOYMENT
+
+FRENCH_EMPLOYMENT
+Je travaille 20 heures par semaine ou plus.
+FT
+Je travaille moins de 20 heures par semaine.
+PT
+Estoy trabajando por ahora, pero mi empleo terminará pronto (quedaré desempleado).
+NT
+Je ne travaille pas, mais je suis à la recherche d'un emploi et je veux commencer à travailler dès que possible.
+UA
+Je ne travaille pas. Je ne veux pas trouver de travail en ce moment. Il se peut que je cherche un emploi l'année prochaine.
+UE
+
+SPANISH_EMPLOYMENT
+Trabajo 20 horas o más por semana.
+FT
+Trabajo menos de 20 horas a la semana.
+PT
+Estoy trabajando por ahora, pero mi empleo terminará pronto (quedaré desempleado).
+NT
+Actualmente no trabajo, pero estoy en búsqueda de empleo y me gustaría encontrar uno tan pronto como sea posible.
+UA
+No trabajo. No me interesa trabajar por ahora. Quizás busque un empleo el próximo año.
+UE
+
+ENGLISH_EMPLOYMENT
+I work 20 hours a week or more.
+FT
+I work fewer than 20 hours a week.
+PT
+I'm working at the moment, but my job will end soon.
+NT
+I am not working, but I'm looking for a job and want to start working as soon as possible.
+UE
+I am not working. I do not want to find a job right now. I may look for a job next year.
+UA
+
+
