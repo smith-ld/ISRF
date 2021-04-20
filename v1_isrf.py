@@ -23,7 +23,7 @@ if __name__ == "__main__":
     #
     #
     #     time.sleep(3)
-    else:
+    # else:
     args = sys.argv
     current = ISRFExcel.ISRFExcel(None)
     # name = "ESOL French responses round 1.xlsx"

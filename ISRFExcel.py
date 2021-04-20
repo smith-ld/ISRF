@@ -3,6 +3,7 @@ import datetime
 import PersonObject as p
 import pdfrw as pdf
 import os
+import regex
 import traceback
 
 ANNOTATIONKEYS = {
@@ -353,8 +354,11 @@ class ISRFExcel:
             person.set_program_startdate(start_date)
             person.update_name(row[1].value, row[2].value)
             person.update_dates(row[3].value, row[4].value)
-            print(row[3].value)
+            # rint(row[3].value)
+            # print(row[5].value)
             print(row[5].value)
+            print(row[6].value)
+            # print(r.value for r in row[3:5])
             c = [x.value.title() for x in row[5:7]]
             try:
                 c.append(str(int(row[8].value)))
@@ -417,7 +421,10 @@ class ISRFExcel:
                 if phone == '' or len(phone) == 1 or ord(phone[0]) > 57:
                     # print(phone)
                     return [None]
-                phone = phone.replace("-", "")
+
+                phone = regex.sub("\D", "", phone)
+                # phone = phone.replace("-", "")
+                #phone = phone.replace(" ", "")
             else:
                 phone = str(int(phone))
 
@@ -699,7 +706,7 @@ class ISRFExcel:
         os.chdir(path)
 
         # print(os.getcwd())
-        location = name[0] + " " + name[1] + ' ISRF.pdf'
+        location = name[1] + ", " + name[0] + ' ISRF.pdf'
         for i in tto:
             Annots[i].update(pdf.PdfDict(AS=pdf.PdfName("On")))
         for i in tto_y:
