@@ -1,10 +1,31 @@
 import ISRFExcel
 import os
 import sys
+import time
 
 if __name__ == "__main__":
+    print("... Program Starting", end='')
+    time.sleep(2)
+
+    # if len(sys.argv) == 1:
+    #     print("")
+    #     print("If at any time you make an error, just type 'restart' to restart the questionnaire.")
+    #     verbage = []
+    #     placement = 0
+    #     while True:
+    #         intake = input(verbage[placement]).strip()
+    #         if intake == 'restart':
+    #             placement = 0
+    #             continue
+    #         elif placement == 0:
+    #
+    #
+    #
+    #
+    #     time.sleep(3)
+    else:
     args = sys.argv
-    current = ISRFExcel.ISRFExcel(args[6])
+    current = ISRFExcel.ISRFExcel(None)
     # name = "ESOL French responses round 1.xlsx"
     current.load_excel_file(args[1])
 

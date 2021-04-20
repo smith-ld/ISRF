@@ -3,7 +3,7 @@ import datetime
 import PersonObject as p
 import pdfrw as pdf
 import os
-import sys
+import traceback
 
 ANNOTATIONKEYS = {
     'FT': 23, 'PT': 24, 'NT': 25, 'UE': 27, 'UA': 28, 'NH': 32, 'NA': 33, 'AN': 34,
@@ -23,7 +23,10 @@ class ISRFExcel:
         self._workbook = None
         self._current_worksheet = None
         self._responses = p.SingletonPersons()
-        self._translations = self.parse_translation_file(translation_file)
+        if translation_file is not None:
+            self._translations = self.parse_translation_file(translation_file)
+        else:
+            self._translations = translation_file
 
     def parse_translation_file(self, t_file):
         with open(t_file, 'r') as file:
@@ -118,7 +121,7 @@ class ISRFExcel:
                          str(["FT", 'PT', 'NT', 'UE', 'UA'])))
 
             working_declaration = input("Which one did they mean? ")
-            with open('Adjustments.txt', 'a') as f:
+            with open('Adjustments.txt', 'a+') as f:
                 f.writelines("French Employment needs adjustment: {} and code {}\n".format(employment,
                                                                                            working_declaration))
         return working_declaration
@@ -131,7 +134,7 @@ class ISRFExcel:
                      'Nativo(a) Americano(a)': 'NA',
                      'Alaskan Native': 'AN',
                      'Asiático(a)': 'AF',
-                     'Pacific Islander': 'PI',
+                     'Isleño(a) del Pacífico (de Oceanía)': 'PI',
                      'Afro-Caribeño(a)': 'AC',
                      'Afroamericano(a)': 'AA',
                      'African': 'AS',
@@ -215,6 +218,7 @@ class ISRFExcel:
             'Votre TANF (Assistance temporaire pour les familles nécessiteuses) prendra fin dans les deux '
             'prochaines années.': 'TANF',
             'Parent célibataire.': 'SP',
+            'Parent célibataire': 'SP',
             'Solía hacerse cargo del hogar o de sus hijos': 'HM', 'pero ahora debe encontrar un trabajo.': 'HM',  # TODO
 
         }
@@ -226,7 +230,7 @@ class ISRFExcel:
                 code = input(
                     "Not recognized French learning barrier: {} please enter the code manually: ".format(barrier))
                 items.append(code)
-                with open('Adjustments.txt', 'a') as f:
+                with open('Adjustments.txt', 'a+') as f:
                     adjustments = "Adjustment for French Learning Barriers: "
                     st = "{}:'{}'\n".format(barrier, code)
                     f.writelines(adjustments)
@@ -266,7 +270,7 @@ class ISRFExcel:
                 code = input(
                     "Not recognized Spanish learning barrier: {} please enter the code manually: ".format(barrier))
                 items.append(code)
-                with open('Adjustments.txt', 'a') as f:
+                with open('Adjustments.txt', 'a+') as f:
                     adjustments = "Adjustment for SPANISH: "
                     st = "{}:'{}'".format(barrier, code)
                     f.writelines(adjustments)
@@ -294,10 +298,14 @@ class ISRFExcel:
         return ethnicities
 
     def english_learning_barriers_scrub(self, learning_barriers_list):
+        if learning_barriers_list is None:
+            return []
         barriers = learning_barriers_list.strip().split(",")
         # print(barriers)
-        barriers = [x.strip() for x in barriers]
         items = []
+
+        barriers = [x.strip() for x in barriers]
+
         d = {
             'Homeless or living in a shelter': 'HOME',
             'You used to take care of the home or children': 'HM',
@@ -345,7 +353,8 @@ class ISRFExcel:
             person.set_program_startdate(start_date)
             person.update_name(row[1].value, row[2].value)
             person.update_dates(row[3].value, row[4].value)
-
+            print(row[3].value)
+            print(row[5].value)
             c = [x.value.title() for x in row[5:7]]
             try:
                 c.append(str(int(row[8].value)))
@@ -358,7 +367,7 @@ class ISRFExcel:
             mob = self.clean_phone_numbers(row[9].value)
             home = self.clean_phone_numbers(row[10].value)
             emer = self.clean_phone_numbers(row[13].value)
-            person.update_phone_numbers([mob, home, emer])
+            person.update_phone_numbers([mob, home, emer])  # TODO - if only one phone number error
             person.update_email(row[11].value)
             person.update_emergency_contact(row[12].value)
 
@@ -378,7 +387,9 @@ class ISRFExcel:
                 person.update_learning_barriers(self.french_learning_barriers_scrub(row[31].value))
                 person.update_ethnicity(self.french_ethnicity_scrub(row[16].value))
                 person.update_employment(self.french_employment_scrub(row[17].value))
-
+            else:
+                pass
+                # TODO - another language, fix with directions
             c = [x.value for x in row[19:22]]
             # print(c)
             person.update_us_studies(row[18].value, c)
@@ -401,9 +412,10 @@ class ISRFExcel:
         t = type(phone)
         phone_nums = []
         try:
-            if t == str:
+            if isinstance(t, str):
                 # print(phone)
                 if phone == '' or len(phone) == 1 or ord(phone[0]) > 57:
+                    # print(phone)
                     return [None]
                 phone = phone.replace("-", "")
             else:
@@ -417,6 +429,9 @@ class ISRFExcel:
             return phone_nums
 
         except:
+            #  print(phone, "\there we are")
+
+            # traceback.print_stack()
             return [None]
 
     def make_forms(self, output_location):
@@ -457,9 +472,11 @@ class ISRFExcel:
         Annots[15].update(pdf.PdfDict(V=person.get_email()))
         phones = person.get_phone_numbers()
         # writing mobile
-        Annots[12].update(pdf.PdfDict(V="  " + "  ".join(phones[0][0]), MaxLen=15))
-        Annots[13].update(pdf.PdfDict(V="  " + "  ".join(phones[0][1]), MaxLen=15))
-        Annots[14].update(pdf.PdfDict(V="  " + "  ".join(phones[0][2]), MaxLen=15))
+        print(phones)
+        if phones[0] is not None and phones[0][0] is not None:
+            Annots[12].update(pdf.PdfDict(V="  " + "  ".join(phones[0][0]), MaxLen=15))
+            Annots[13].update(pdf.PdfDict(V="  " + "  ".join(phones[0][1]), MaxLen=15))
+            Annots[14].update(pdf.PdfDict(V="  " + "  ".join(phones[0][2]), MaxLen=15))
         if phones[2] is not None and len(phones[2]) > 0:
             try:
                 Annots[16].update(pdf.PdfDict(V="  " + "  ".join(phones[2][0]), MaxLen=15))
@@ -488,36 +505,6 @@ class ISRFExcel:
         # print(ethnicities)
         for x in ethnicities:
             Annots[ANNOTATIONKEYS[x]].update(pdf.PdfDict(AS=pdf.PdfName("On")))
-        # if ethnicities.__contains__('NH'):
-        #     tto.append(32)
-        #     #Annots[32].update(pdf.PdfDict(AS=pdf.PdfName("On")))
-        # if ethnicities.__contains__('NA'):
-        #     tto.append(33)
-        #     #Annots[33].update(pdf.PdfDict(AS=pdf.PdfName("On")))
-        # if ethnicities.__contains__('AN'):
-        #     tto.append(34)
-        #     #Annots[34].update(pdf.PdfDict(AS=pdf.PdfName("On")))
-        # if ethnicities.__contains__('AS'):
-        #     tto.append(35)
-        #     #Annots[35].update(pdf.PdfDict(AS=pdf.PdfName("On")))
-        # if ethnicities.__contains__('PI'):
-        #     tto.append(36)
-        #     #Annots[36].update(pdf.PdfDict(AS=pdf.PdfName("On")))
-        # if ethnicities.__contains__('AA'):
-        #     tto.append(37)
-        #     #Annots[37].update(pdf.PdfDict(AS=pdf.PdfName("On")))
-        # if ethnicities.__contains__('AC'):
-        #     tto.append(38)
-        #     #Annots[38].update(pdf.PdfDict(AS=pdf.PdfName("On")))
-        # if ethnicities.__contains__('AF'):
-        #     tto.append(39)
-        #     #Annots[39].update(pdf.PdfDict(AS=pdf.PdfName("On")))
-        # if ethnicities.__contains__('L'):
-        #     tto.append(40)
-        #     #Annots[40].update(pdf.PdfDict(AS=pdf.PdfName("On")))
-        # if ethnicities.__contains__('W'):
-        #     tto.append(41)
-        #     #Annots[41].update(pdf.PdfDict(AS=pdf.PdfName("On")))
 
         work_declaration = person.get_working_declaration()
         # Annots[d[work_declaration].update(pdf.PdfDict(AS=pdf.PdfName("On"))) should work
