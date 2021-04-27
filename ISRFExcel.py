@@ -413,20 +413,13 @@ class ISRFExcel:
 
     def clean_phone_numbers(self, phone):
         # print(phone)
-        t = type(phone)
+        # t = type(phone)
         phone_nums = []
         try:
-            if isinstance(t, str):
+            phone = regex.sub("\D", "", str(phone))
+            if phone == '' or len(phone) == 1 or ord(phone[0]) > 57:
                 # print(phone)
-                if phone == '' or len(phone) == 1 or ord(phone[0]) > 57:
-                    # print(phone)
-                    return [None]
-
-                phone = regex.sub("\D", "", phone)
-                # phone = phone.replace("-", "")
-                #phone = phone.replace(" ", "")
-            else:
-                phone = str(int(phone))
+                return [None]
 
             # print(phone)
             phone_nums.append(phone[0:3])
