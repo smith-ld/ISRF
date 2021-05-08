@@ -190,19 +190,6 @@ class PersonObject:
         return current_day
 
 
-"""    self._studied_in_US = False
-        self._highest_us_grade = None
-        self._highest_ny_grade = None
-        self._last_ny_schoolname = None
-        self._finished_hs = False
-        self._finished_uni = False
-        self._country_years = None
-        self._dependents = []
-        self._single_parent = False
-        self._has_dependents = False
-        self._learning_barriers = []"""
-
-
 class SingletonPersons:
     def __init__(self):
         self._persons = []
