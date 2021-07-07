@@ -359,11 +359,14 @@ class ISRFExcel:
             # print(r.value for r in row[3:5])
             try:
                 c = [x.value.title() for x in row[5:7]]
+
                 c.append(str(int(row[8].value)))
 
-            except AttributeError or TypeError:
+            except Exception as e:
+                print("[Error]: {}".format(e.args))
                 name = person.get_fullname()
-                print("[Error]: Please double check ~{}'s~ address.".format(name))
+                print("[Error]: Please double check ~{}'s~ address.".format(" ".join(name)))
+                inp = input("Press Enter to acknowledge... the program will continue to run on everything else.")
                 continue
 
             person.update_entire_address(c)
@@ -512,7 +515,7 @@ class ISRFExcel:
             Annots[43].update(pdf.PdfDict(V=str(person.get_highest_us_grade())))
             ny_grade = person.get_highest_ny_grade()
             try:
-                ny_grade = int(ny_grade)
+                ny_grade = int(regex.sub("\D", "", str(ny_grade)))
                 Annots[44].update(pdf.PdfDict(V=str(ny_grade)))
                 ny_school = person.get_ny_school()
                 if ny_school is not None:

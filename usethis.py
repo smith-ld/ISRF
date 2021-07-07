@@ -1,4 +1,6 @@
 from v1_isrf import *
 
-arguments = [None, "su21.xlsx", "./drive/My Drive/SpringB21ISRFs", 2, 89, "English"]
+# arguments are [None, "excel sheet filename.xlsx", ""./drive/My Drive/folderName", start row, end row, "Language]
+
+arguments = [None, "spb21.xlsx", "./SPB21", 2, 182, "English"]
 runtime(arguments)
