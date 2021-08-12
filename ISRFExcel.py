@@ -138,7 +138,7 @@ class ISRFExcel:
                      'Isleño(a) del Pacífico (de Oceanía)': 'PI',
                      'Afro-Caribeño(a)': 'AC',
                      'Afroamericano(a)': 'AA',
-                     'African': 'AS',
+                     'African': 'AF',
                      'Latinoa': 'L', 'Latino(a)': 'L',
                      'Blanco [No latino(a)]': 'W'
                      }
@@ -288,7 +288,7 @@ class ISRFExcel:
                      'Pacific Islander': 'PI',
                      'African American': 'AA',
                      'Afro-Caribbean': 'AC',
-                     'African': 'AS',
+                     'African': 'AF',
                      'Latinoa': 'L',
                      'White [not Latinoa]': 'W'
                      }
