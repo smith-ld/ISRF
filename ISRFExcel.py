@@ -44,9 +44,7 @@ class ISRFExcel:
 
                 if line in languages:
                     current_lang = line
-
                     # print(current_lang)
-
                 elif line == "":
                     # print("HERE")
                     # print(current_lang_dict)
@@ -54,9 +52,7 @@ class ISRFExcel:
                     if current_lang != "":
                         lang_dict[current_lang] = current_lang_dict
                 else:
-
                     # print(str(i)  + " " + line)
-
                     current_lang_dict[line] = lines[i + 1].strip()
                     i += 2
                     continue
